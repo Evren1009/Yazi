@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="tr">
+<!DOCTYPE html>
+<html lang="tr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -20,6 +21,7 @@
     article h2 { margin-top:2.5rem; }
     blockquote { border-left:4px solid var(--accent); padding-left:1rem; color:#cbd5f5; }
     .back { margin-bottom:1.5rem; display:inline-block; }
+    .error { color:#fca5a5; }
   </style>
 </head>
 <body>
@@ -32,19 +34,71 @@
 const app = document.getElementById('app');
 const params = new URLSearchParams(location.search);
 const file = params.get('yazi');
-const USER = 'kullaniciadi'; 
-const REPO = USER + '.github.io';
-const PATH = 'yazilar';
 
-async function listPosts() { const res = await fetch(https://api.github.com/repos/${USER}/${REPO}/contents/${PATH}); const files = await res.json(); const posts = files.filter(f => f.name.endsWith('.md'));
+const USER = 'Ali144-bit';      // GitHub kullanıcı adı
+const REPO = 'Yazi';            // Repo adı
+const PATH = 'yazilar';         // Markdown dosyalarının bulunduğu dizin
+const BRANCH = 'main';          // branch (genellikle main)
 
-app.innerHTML = posts.map(p => <div class="post"> <h2><a href="?yazi=${p.name}">${p.name.replace('.md','').replaceAll('-',' ')}</a></h2> <div class="meta">Markdown yazı</div> </div>).join(''); }
+function safeName(name) {
+  return name.replace(/\.md$/i, '').replace(/-/g, ' ');
+}
 
-async function readPost(name) { const res = await fetch(${PATH}/${name}); const md = await res.text(); const words = md.split(/\s+/).length; const minutes = Math.max(1, Math.round(words / 200));
+async function listPosts() {
+  app.textContent = 'Yükleniyor…';
+  try {
+    const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${PATH}?ref=${BRANCH}`);
+    if (!res.ok) {
+      throw new Error(`Liste alınamadı (${res.status})`);
+    }
+    const files = await res.json();
+    const posts = (Array.isArray(files) ? files : [])
+      .filter(f => f.type === 'file' && f.name.toLowerCase().endsWith('.md'))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    if (posts.length === 0) {
+      app.innerHTML = '<p class="meta">Henüz yazı yok.</p>';
+      return;
+    }
+    app.innerHTML = posts.map(p => {
+      const title = safeName(p.name);
+      const href = `?yazi=${encodeURIComponent(p.name)}`;
+      return `<div class="post"><h2><a href="${href}">${title}</a></h2><div class="meta">Markdown yazı</div></div>`;
+    }).join('');
+  } catch (err) {
+    app.innerHTML = `<div class="error">Hata: ${err.message}</div>`;
+  }
+}
 
-app.innerHTML = <a class="back" href="./">← Tüm yazılar</a> <div class="meta">${minutes} dk okuma</div> <article>${marked.parse(md)}</article>; }
+async function readPost(name) {
+  app.textContent = 'Yükleniyor…';
+  try {
+    const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/${BRANCH}/${PATH}/${encodeURIComponent(name)}`;
+    const res = await fetch(rawUrl);
+    if (!res.ok) {
+      throw new Error(`Yazı alınamadı (${res.status})`);
+    }
+    const md = await res.text();
+    const words = md.split(/\s+/).filter(Boolean).length;
+    const minutes = Math.max(1, Math.round(words / 200));
+    const title = safeName(name);
+    document.title = `${title} — Yazılarım`;
+    app.innerHTML = `
+      <a class="back" href="./">← Tüm yazılar</a>
+      <h2>${title}</h2>
+      <div class="meta">${minutes} dk okuma</div>
+      <article>${marked.parse(md)}</article>
+    `;
+  } catch (err) {
+    app.innerHTML = `<div class="error">Hata: ${err.message}</div><p><a class="back" href="./">← Tüm yazılar</a></p>`;
+  }
+}
 
-if (file) readPost(file); else listPosts(); </script>
+if (file) {
+  readPost(file);
+} else {
+  listPosts();
+}
+</script>
 
 </body>
 </html>
