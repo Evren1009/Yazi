@@ -1,0 +1,50 @@
+<!DOCTYPE html><html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yazılarım</title>
+  <meta name="description" content="Telefondan yazılan Markdown yazılar" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root { --bg:#0f172a; --text:#e5e7eb; --muted:#9ca3af; --accent:#38bdf8; }
+    body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--text); }
+    header { padding:3rem 1rem 2rem; text-align:center; }
+    header h1 { margin:0 0 .5rem; }
+    main { max-width:760px; margin:0 auto; padding:1rem; }
+    a { color:var(--accent); text-decoration:none; }
+    .post { padding:1.25rem 0; border-bottom:1px solid #1f2937; }
+    .post h2 { margin:.25rem 0; }
+    .meta { color:var(--muted); font-size:.85rem; }
+    article { line-height:1.8; font-size:1.05rem; }
+    article h1 { font-size:2rem; }
+    article h2 { margin-top:2.5rem; }
+    blockquote { border-left:4px solid var(--accent); padding-left:1rem; color:#cbd5f5; }
+    .back { margin-bottom:1.5rem; display:inline-block; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Yazılarım</h1>
+  <p class="meta">Telefondan yazdığım yazılar</p>
+</header>
+<main id="app">Yükleniyor…</main>
+<script>
+const app = document.getElementById('app');
+const params = new URLSearchParams(location.search);
+const file = params.get('yazi');
+const USER = 'kullaniciadi'; 
+const REPO = USER + '.github.io';
+const PATH = 'yazilar';
+
+async function listPosts() { const res = await fetch(https://api.github.com/repos/${USER}/${REPO}/contents/${PATH}); const files = await res.json(); const posts = files.filter(f => f.name.endsWith('.md'));
+
+app.innerHTML = posts.map(p => <div class="post"> <h2><a href="?yazi=${p.name}">${p.name.replace('.md','').replaceAll('-',' ')}</a></h2> <div class="meta">Markdown yazı</div> </div>).join(''); }
+
+async function readPost(name) { const res = await fetch(${PATH}/${name}); const md = await res.text(); const words = md.split(/\s+/).length; const minutes = Math.max(1, Math.round(words / 200));
+
+app.innerHTML = <a class="back" href="./">← Tüm yazılar</a> <div class="meta">${minutes} dk okuma</div> <article>${marked.parse(md)}</article>; }
+
+if (file) readPost(file); else listPosts(); </script>
+
+</body>
+</html>
